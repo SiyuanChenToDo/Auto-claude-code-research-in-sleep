@@ -79,3 +79,15 @@ def test_real_codex_mirror_inventory() -> None:
     assert report["skill_count"] >= 80
     assert len(report["skills"]) == report["skill_count"]
     assert not report["invalid_policies"]
+
+
+def test_interface_only_sidecar_is_valid(tmp_path: Path) -> None:
+    skill(tmp_path, "lean-formalize", "Lean formalization")
+    policy(
+        tmp_path,
+        "lean-formalize",
+        'interface:\n  display_name: "Lean Formalization"\n  default_prompt: "Use $lean-formalize."\n',
+    )
+    report = audit(tmp_path)
+    assert report["invalid_policies"] == []
+    assert report["skills"][0]["invocation"] == "implicit-default"
