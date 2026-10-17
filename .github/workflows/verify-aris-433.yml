@@ -1,0 +1,31 @@
+name: Verify ARIS issue 433 policy audit
+
+on:
+  push:
+    branches:
+      - verification/aris-433-real-ci
+
+permissions:
+  contents: read
+
+jobs:
+  real-repository-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install test dependencies
+        run: python -m pip install pytest
+      - name: Test policy audit and existing Codex mirror
+        run: python -m pytest -q tests/test_audit_codex_invocation.py tests/test_codex_skill_mirror.py
+      - name: Verify actual ARIS skill inventory
+        run: python tools/check_skills_inventory.py
+      - name: Audit all actual Codex skills
+        run: |
+          python tools/audit_codex_invocation.py --fail-on-referenced-explicit > /tmp/aris-codex-audit.json
+          python -c 'import json; d=json.load(open("/tmp/aris-codex-audit.json")); print("scanned skills:", d["skill_count"], "explicit-only:", d["explicit_only_count"], "invalid:", len(d["invalid_policies"]))'
+      - name: Compile changed Python files
+        run: python -m py_compile tools/audit_codex_invocation.py tests/test_audit_codex_invocation.py
