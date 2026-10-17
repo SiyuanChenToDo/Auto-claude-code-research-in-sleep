@@ -22,6 +22,9 @@ def parse_policy(path: Path) -> tuple[bool | None, str | None]:
     if not path.exists():
         return None, None
     raw = path.read_text(encoding="utf-8")
+    # Metadata-only sidecars are valid: absent policy means Codex defaults.
+    if re.search(r"(?m)^policy\s*:", raw) is None:
+        return None, None
     blocks = list(POLICY_BLOCK.finditer(raw))
     if len(blocks) != 1:
         return None, f"{path}: expected exactly one top-level policy mapping"
